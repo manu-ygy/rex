@@ -114,7 +114,7 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
             */
 
             var windowInfo = await getWindowInfo();
-            await screen.captureRegion('captcha', new Region(calculatePosition(windowInfo, 445, 'x') + windowInfo.left, calculatePosition(windowInfo, 294, 'y') + windowInfo.top, calculatePosition(windowInfo, 74, 'x'), calculatePosition(windowInfo, 18, 'y')), '.png', '.temp/').then(async function() {
+            await screen.captureRegion('captcha', new Region(calculatePosition(windowInfo, 440, 'x') + windowInfo.left, calculatePosition(windowInfo, 270, 'y') + windowInfo.top, calculatePosition(windowInfo, 74, 'x'), calculatePosition(windowInfo, 32, 'y')), '.png', '.temp/').then(async function() {
                 const ret = await worker.recognize('.temp/captcha.png');
                 console.log(ret.data.text);
 
@@ -127,11 +127,13 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
             await screen.captureRegion('ss', await getWindowInfo(), '.png', '.temp/').then(async function() {
                 var windowInfo = await getWindowInfo();
                 await jimp.read('.temp/ss.png').then(async function (image) {
-                    var pixel = image.getPixelColor(calculatePosition(windowInfo, 433, 'x'), calculatePosition(windowInfo, 208, 'y'))
+                    var pixel = image.getPixelColor(calculatePosition(windowInfo, 598, 'x') + windowInfo.left, calculatePosition(windowInfo, 250, 'y') + windowInfo.top)
                     var color = pixel.toString()[0];
-                    console.log(jimp.intToRGBA(pixel))
+                    console.log(jimp.intToRGBA(pixel));
+                    console.log(color);
 
-                    if (pixel.r > 190 && pixel.g > 190 && pixel.b > 190) {
+                    //if (pixel.r > 170 && pixel.g > 170 && pixel.b > 170) {
+                    if (color == '3') {
                         console.log('solving captcha ...');
                         await solveCaptcha();
                     } else {
