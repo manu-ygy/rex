@@ -104,7 +104,7 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
             console.log('gathering ...');
         }
 
-        async function solveCaptcha() {
+        async function solveCaptcha() { 
             /*
             offset:
             top: 458
@@ -152,5 +152,36 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
         }, 7000);
     }
 
-    await autoGardening();
+    async function autoFishing() {
+        async function clickButton() {
+            var windowInfo = await getWindowInfo();
+            await mouse.move(straightTo(new Point(calculatePosition(windowInfo, 598, 'x') + windowInfo.left, calculatePosition(windowInfo, 250, 'y') + windowInfo.top)));
+            await mouse.doubleClick(Button.LEFT);
+        }
+
+        async function scanPixel() {
+            var windowInfo = await getWindowInfo();
+            await screen.captureRegion('fish', new Region(windowInfo.left + 1137, windowInfo.top + 560, 150, 150), '.png', '.temp/').then(async function() {
+                await jimp.read('.temp/fish.png').then(async function (image) {
+                    var pixel = image.getPixelColor(75, 5);
+                    var rgba = jimp.intToRGBA(pixel);
+
+                    console.log(rgba);
+
+                    if (rgba.g > 190) {
+                        console.log('maybe green')
+                    }
+                }).catch(function (err) {
+                    console.log(err);
+                });
+            });
+        }
+
+        scanPixel();
+        setInterval(async function () {
+            await scanPixel();
+        }, 500);
+    }
+
+    await autoFishing();
 })()
