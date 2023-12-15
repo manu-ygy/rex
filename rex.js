@@ -1,11 +1,21 @@
+// tesseract
 const tesseract = require('tesseract.js');
-const closestMatch = require('closest-match');
+
+// utility
 const fs = require('fs');
+const prompt = require('prompt-sync')()
+
+// image manipulation gallery
 const jimp = require('jimp');
+const replaceColor = require('replace-color');
+
+// calculation library
+const closestMatch = require('closest-match');
+
+// colors
 const colors = require('./ntc');
 
 // nut js
-
 const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straightTo, Point, Button} = require('@nut-tree/nut-js');
 // require("@nut-tree/template-matcher"); 
 
@@ -24,11 +34,15 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
     const worker = await tesseract.createWorker('eng');
 
     function calculatePosition(windowInfo, pos, type) {
+        /*
         if (type == 'x') {
             return pos * (windowInfo.width / 960)
         } else {
             return pos * (windowInfo.height / 540)
         }
+        */
+
+        return pos
     }
 
     async function getWindowInfo(debug = false) {
@@ -48,6 +62,8 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
                 return region;
             }
         }
+
+        return new Region(0, 0, 0, 0);
     }
 
     async function moveCursor() {
@@ -114,13 +130,60 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
             */
 
             var windowInfo = await getWindowInfo();
-            await screen.captureRegion('captcha', new Region(calculatePosition(windowInfo, 440, 'x') + windowInfo.left, calculatePosition(windowInfo, 270, 'y') + windowInfo.top, calculatePosition(windowInfo, 74, 'x'), calculatePosition(windowInfo, 32, 'y')), '.png', '.temp/').then(async function() {
-                const ret = await worker.recognize('.temp/captcha.png');
-                console.log(ret.data.text);
-
+            await screen.captureRegion('captcha', new Region(calculatePosition(windowInfo, 445, 'x') + windowInfo.left, calculatePosition(windowInfo, 295, 'y') + windowInfo.top, calculatePosition(windowInfo, 74, 'x'), calculatePosition(windowInfo, 32, 'y')), '.png', '.temp/').then(async function() {
+                await jimp.read('.temp/captcha.png').then(async function(image) {
+                    console.log('readed')
+                    image.scale(5, 5).write('.temp/captcha-resized.png', async function() {
+                        console.log('resized')
+                        await replaceColor({
+                            image: '.temp/captcha-resized.png',
+                            colors: {
+                                type: 'hex',
+                                targetColor: '#7f7f80',
+                                replaceColor: '#000000'
+                            },
+                            deltaE: 10
+                        }).then(async function (image) {
+                            image.write('.temp/captcha-resized.png', async function(err) {
+                                await replaceColor({
+                                    image: '.temp/captcha-resized.png',
+                                    colors: {
+                                        type: 'hex',
+                                        targetColor: '#fafafa',
+                                        replaceColor: '#000000'
+                                    },
+                                    deltaE: 4.2
+                                }).then(async function (image) {
+                                    console.log('shaped')
+                                    image.scale(10, 10).write('.temp/captcha-resized.png', async function(err) {
+                                        console.log('solving')
+                                        if (err) return console.log(err);
+                    
+                                        var ret = await worker.recognize('.temp/captcha-resized.png');
+                                        console.log(ret.data.text.replaceAll('=', '-'));
+                                    })
+                                }).catch((err) => {
+                                    console.log(err)
+                                })
+                            })
+                        })
+                    })
+                })
             }).catch(function (err) {
                 console.log(err);
             });
+
+            /*
+            await jimp.read('.temp/captcha-example.png').then(async function(image) {
+                image.resize(325, 100).write('.temp/captcha-resized.png', async function() {
+                    var ret = await worker.recognize('.temp/captcha-example.png');
+                    console.log(ret.data.text);
+
+                    ret = await worker.recognize('.temp/captcha-resized.png');
+                    console.log(ret.data.text);
+                })
+            })
+            */
         }
 
         async function detectCaptcha() {
@@ -150,6 +213,10 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
         setInterval(async function () {
             await clickButton();
         }, 7000);
+
+        /*
+        await solveCaptcha();
+        */
     }
 
     async function autoFishing() {
@@ -183,5 +250,28 @@ const {mouse, screen, Region, getActiveWindow, getWindows, imageResource, straig
         }, 500);
     }
 
-    await autoFishing();
+    async function displayPrompt() {
+        var input = prompt('> ');
+
+        switch (input) {
+            case 'g':
+                await autoGardening();
+                break;
+
+            case 'w':
+                console.log(await getWindowInfo());
+                break;
+
+            case 'x':
+                console.log('exit');
+                break;
+
+            default:
+                displayPrompt();
+                break;
+        }
+    }
+
+
+    displayPrompt();
 })()
